@@ -65,8 +65,68 @@ export function selectSpawnPositions(
     (p) => !occupiedPositions.has(`${p.x},${p.y}`),
   );
 
-  const shuffled = [...available].sort(() => rng() - 0.5);
-  return shuffled.slice(0, Math.min(count, MAX_TOKENS_ON_SCREEN));
+  const selected: SpawnPoint[] = [];
+  const occupiedList: SpawnPoint[] = [];
+  
+  for (const str of occupiedPositions) {
+    const [xStr, yStr] = str.split(',');
+    occupiedList.push({ x: Number(xStr), y: Number(yStr) });
+  }
+
+  const numToSelect = Math.min(count, MAX_TOKENS_ON_SCREEN, available.length);
+  const NUM_CANDIDATES = 5;
+
+  for (let i = 0; i < numToSelect; i++) {
+    if (available.length === 0) break;
+
+    // If board is empty, pick completely randomly
+    if (occupiedList.length === 0 && selected.length === 0) {
+      const idx = Math.floor(rng() * available.length);
+      selected.push(available[idx]);
+      available.splice(idx, 1);
+      continue;
+    }
+
+    let bestCandidateIdx = -1;
+    let maxMinDist = -1;
+
+    // Pick random candidates and choose the one furthest from existing tokens
+    const candidatesToCheck = Math.min(NUM_CANDIDATES, available.length);
+    for (let c = 0; c < candidatesToCheck; c++) {
+      const candidateIdx = Math.floor(rng() * available.length);
+      const candidate = available[candidateIdx];
+
+      let minDistSq = Infinity;
+
+      // Distance to previously occupied
+      for (const p of occupiedList) {
+        const dx = candidate.x - p.x;
+        const dy = candidate.y - p.y;
+        const distSq = dx * dx + dy * dy;
+        if (distSq < minDistSq) minDistSq = distSq;
+      }
+
+      // Distance to already selected in this batch
+      for (const p of selected) {
+        const dx = candidate.x - p.x;
+        const dy = candidate.y - p.y;
+        const distSq = dx * dx + dy * dy;
+        if (distSq < minDistSq) minDistSq = distSq;
+      }
+
+      if (minDistSq > maxMinDist) {
+        maxMinDist = minDistSq;
+        bestCandidateIdx = candidateIdx;
+      }
+    }
+
+    if (bestCandidateIdx !== -1) {
+      selected.push(available[bestCandidateIdx]);
+      available.splice(bestCandidateIdx, 1);
+    }
+  }
+
+  return selected;
 }
 
 export function positionKey(x: number, y: number): string {

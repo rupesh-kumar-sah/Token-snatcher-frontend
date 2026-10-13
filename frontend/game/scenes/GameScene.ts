@@ -8,7 +8,7 @@ import {
   GOLDEN_TOKEN_BONUS_POINTS,
   GOLDEN_TOKEN_MULTIPLIER,
 } from '@/utils/constants';
-import { createScoreState, addScore, resetScore, ScoreState } from '@/utils/scoring';
+import { createScoreState, addScore, resetScore, resetCombo, calculateMultiplier, ScoreState } from '@/utils/scoring';
 import { positionKey, SpawnPoint } from '@/utils/spawnLogic';
 import { TokenType } from '@/utils/constants';
 import { TokenSpawnEngine, SpawnEvent } from '@/game/TokenSpawnEngine';
@@ -180,7 +180,7 @@ export class GameScene extends Phaser.Scene {
       this.tweens.add({
         targets: container, alpha: 0, scaleX: 0, scaleY: 0,
         duration: EXPIRE_ANIM_MS, ease: 'Back.easeIn',
-        onComplete: () => this.removeToken(container),
+        onComplete: () => this.handleMissedToken(container),
       });
     });
   }
@@ -246,6 +246,16 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  private handleMissedToken(container: Phaser.GameObjects.Container): void {
+    if (!container.active) return;
+    this.removeToken(container);
+    if (this.scoreState.combo > 0) {
+      this.scoreState = resetCombo(this.scoreState);
+      this.updateUI();
+      this.onScoreUpdate?.(this.scoreState.score, this.scoreState.combo);
+    }
+  }
+
   private removeToken(container: Phaser.GameObjects.Container): void {
     if (!container.active) return;
     this.spawnEngine.markFree(container.x, container.y);
@@ -271,7 +281,8 @@ export class GameScene extends Phaser.Scene {
   private updateUI(): void {
     this.scoreText.setText(`Score: ${this.scoreState.score}`);
     if (this.scoreState.combo > 0) {
-      this.comboText.setText(`Combo x${(1 + this.scoreState.combo * 0.5).toFixed(1)}`);
+      const multiplier = calculateMultiplier(this.scoreState.combo);
+      this.comboText.setText(`Combo: ${this.scoreState.combo}x (${multiplier.toFixed(1)}x)`);
     } else {
       this.comboText.setText('');
     }

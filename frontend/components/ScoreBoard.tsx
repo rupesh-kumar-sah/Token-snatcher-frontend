@@ -18,7 +18,7 @@ export default function ScoreBoard({ score, combo }: ScoreBoardProps) {
         <div className="text-right">
           <div className="text-sm text-[#94a3b8] font-mono">Combo</div>
           <div className="text-xl font-bold text-[#f59e0b] font-mono">
-            x{multiplier.toFixed(1)}
+            {combo}x <span className="text-sm text-[#fbbf24]">({multiplier.toFixed(1)}x)</span>
           </div>
         </div>
       )}

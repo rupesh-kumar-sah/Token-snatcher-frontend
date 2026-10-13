@@ -43,3 +43,12 @@ export function addScore(state: ScoreState, basePoints: number, now: number): { 
 export function resetScore(): ScoreState {
   return createScoreState();
 }
+
+export function resetCombo(state: ScoreState): ScoreState {
+  return {
+    ...state,
+    combo: 0,
+    lastSnatchTime: 0,
+  };
+}
+
